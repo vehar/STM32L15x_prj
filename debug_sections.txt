@@ -1,0 +1,20 @@
+ //**********Debug section***************/
+ 
+ 
+    send_str_u(" GPIO_test \n");
+    
+    
+ //	GPIOB->MODER |= GPIO_MODER_MODER7_0;	// выставляем бит 7 порта B на выход 
+//	GPIOB->OTYPER &=~GPIO_OTYPER_ODR_7;		// выход PUSH-PULL
+//	GPIOB->MODER |= GPIO_MODER_MODER6_0;	// выставляем бит 6 порта B на выход
+//	GPIOB->OTYPER &=~GPIO_OTYPER_ODR_6;		// выход PUSH-PULL
+    
+       //GPIOB->ODR &= ~(GPIO_OTYPER_ODR_7);	// сброс бита 7 порта B
+		GPIOB->ODR |= GPIO_OTYPER_ODR_6;	// установка бита 6 порта B (blue)
+        GPIOB->ODR |= GPIO_OTYPER_ODR_7;	// установка бита 7 порта B  (green)
+        
+  //GPIOB->BSRRH |= GPIO_BSRR_BS_6;
+   // GPIOB->BSRRH |= GPIO_BSRR_BS_7;
+
+   
+  //**********Debug section***************/  

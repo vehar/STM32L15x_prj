@@ -1,0 +1,509 @@
+#include "stm32l1xx.h"
+#include "stm32l1xx_gpio.h"
+
+#include "stdio.h"
+#include "discover_board.h"
+#include "stm32l_discovery_lcd.h"
+//#include "stm32l1xx_i2c.h"
+
+
+#include "gpio_init.h"
+#include "main.h"
+#include "functions.h"
+
+
+
+
+
+
+
+
+#define VERSION "1.0"
+#define DATE "03.09.13"
+
+void Info(){
+send_str_u(VERSION);  
+send_str_u(DATE);
+}
+
+void GPS_get_data(void){
+
+ParseGpsData();  
+  
+send_str_u("GPS");
+send_str_u((uint8_t *) &gpsData);
+
+ //spi1_buf = (uint8_t *) &gpsData;
+ //spi1_rx_buf_size = gpsDataSize;
+}
+
+
+//160521.109,0000.0000,N,00000.0000,E
+
+
+bool ParseGpsData()
+{
+	bool result = 0;
+	uint16_t index = 0, coin = 0;//coincendence
+
+        
+     //for debug
+        strcpy(UsartRxBuffer, "$GPGGA,160521.109,0000.0000,N,00000.0000,E");
+        
+	for(;index < USART_RX_BUFF_SIZE;index++)
+	{
+                //if(index == RXBUFFERSIZE/2) CustWDReset();
+              //  if(majorInterrupt) return 0;
+		if((UsartRxBuffer[index]=='$')&&(coin==0)) {coin++; continue;}
+		if((UsartRxBuffer[index]=='G')&&(coin==1)) {coin++; continue;}
+		if((UsartRxBuffer[index]=='P')&&(coin==2)) {coin++; continue;}
+		if((UsartRxBuffer[index]=='G')&&(coin==3)) {coin++; continue;}
+		if((UsartRxBuffer[index]=='G')&&(coin==4)) {coin++; continue;}
+		if((UsartRxBuffer[index]=='A')&&(coin==5)) {coin++; continue;}
+		if((UsartRxBuffer[index]==',')&&(coin==6))
+		{
+                     //   SetGpsFlag(GPS_CONNECTED_FLAG);
+			index++;
+			if(index + 34 < USART_RX_BUFF_SIZE)
+			{
+				int j;
+				for(j=0; j<10; j++)
+					gpsData.time[j] = UsartRxBuffer[index++];
+				gpsData.time[j] = 0;
+				index++;
+				for(j=0; j<11; j++)
+					gpsData.latid[j] = UsartRxBuffer[index++];
+				gpsData.latid[j] = 0;
+				index++;
+				for(j=0; j<12; j++)
+					gpsData.longit[j] = UsartRxBuffer[index++];
+				gpsData.longit[j] = 0;
+ 				result = 1;
+			}
+			coin = 0;
+			break;
+		}
+		coin = 0;
+	}
+	return result;
+}
+
+
+
+
+
+void Current_monitor_get_data(void){
+send_str_u("Current_monitor_get_data");  
+  
+}
+
+void delay (int a)
+{
+    volatile int i,j;
+    for (i=0 ; i < a ; i++)
+    {
+        j++;
+    }
+    return;
+}
+
+enum rcc_cfgr_mco_select
+{
+	RCC_CFGR_MCOSEL_DISABLED = 0,
+	RCC_CFGR_MCOSEL_SYSCLK = RCC_CFGR_MCOSEL_0,
+	RCC_CFGR_MCOSEL_HSI = RCC_CFGR_MCOSEL_1,
+	RCC_CFGR_MCOSEL_MSI = RCC_CFGR_MCOSEL_1 | RCC_CFGR_MCOSEL_0,
+	RCC_CFGR_MCOSEL_HSE = RCC_CFGR_MCOSEL_2,
+	RCC_CFGR_MCOSEL_PLL = RCC_CFGR_MCOSEL_2 | RCC_CFGR_MCOSEL_0,
+	RCC_CFGR_MCOSEL_LSI = RCC_CFGR_MCOSEL_2 | RCC_CFGR_MCOSEL_1,
+	RCC_CFGR_MCOSEL_LSE = RCC_CFGR_MCOSEL_2 | RCC_CFGR_MCOSEL_1
+			| RCC_CFGR_MCOSEL_0
+};
+
+
+void HSI_on_16MHz (void){
+   /*  в качестве источника тактирования внутренний генератор HSI с частотой 16 Мгц. */  
+  RCC->CR |= RCC_CR_HSION; //Включаем тактовый генератор HSI
+  while(!(RCC_CR_HSION)); //Ждем его стабилизации
+  RCC->CFGR |= RCC_CFGR_SW_HSI; //Выбираем источником тактовой частоты SYSCLK генератор HSI
+  RCC->CR &= ~RCC_CR_MSION; //Отключаем генератор MSI.   
+}
+
+void All_clk_On(void){ //тактирование портов ввода-вывода и периферии
+  RCC->AHBENR  |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN | RCC_APB1ENR_I2C1EN | RCC_APB1ENR_I2C2EN | RCC_APB1ENR_USART2EN | RCC_APB1ENR_SPI2EN ;
+  RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_SPI1EN;
+}
+
+void i2c1_init(){
+  
+  RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN | RCC_APB1ENR_I2C1EN;
+  
+  PIN_CONFIGURATION(PIN_I2C1_SCL);
+  PIN_CONFIGURATION(PIN_I2C1_SDA);
+        
+  	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+            I2C1->CR2 |= I2C_CR2_ITBUFEN;  /*!< Buffer Interrupt Enable */
+            I2C1->CR2 |= I2C_CR2_ITEVTEN;  /*!< Event Interrupt Enable */
+                           
+	// текущее значение частоты PCLK1 (от 2 до 32, включительно)
+	I2C1->CR2 &= ~I2C_CR2_FREQ;
+	I2C1->CR2 |= 32;
+	// установка частоты обмена
+	I2C1->CCR &= ~I2C_CCR_CCR;
+	I2C1->CCR |= 10;
+	// время установки сигнала
+	I2C1->TRISE = 3;
+}
+
+  uint8_t eeprom_data;
+void i2c1_rx (int adress){
+
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// разрешение работы
+	I2C1->CR1 |= I2C_CR1_PE;
+
+        
+	// формирование сигнала СТАРТ
+	I2C1->CR1 |= I2C_CR1_START;
+	while (!(I2C1->SR1 & I2C_SR1_SB)){} 	// окнчание формирования сигнала СТАРТ
+	(void) I2C1->SR1;
+
+	// передача адреса ведомого + запись
+	I2C1->DR =  adress + 0;//0xA0
+	while (!(I2C1->SR1 & I2C_SR1_ADDR)){} 	// ожидание окончания передачи адреса
+	(void) I2C1->SR1;
+	(void) I2C1->SR2;
+
+	// передача адреса 10-й ячейки
+	I2C1->DR = 10;
+	while (!(I2C1->SR1 & I2C_SR1_BTF)){} 	// ждём окнчания передачи адреса
+
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// формирование сигнала ПОВТОРНЫЙ СТАРТ
+	I2C1->CR1 |= I2C_CR1_START;
+	while (!(I2C1->SR1 & I2C_SR1_SB)){}
+	(void) I2C1->SR1;
+
+	// передаём адрес ведомого + чтение
+	I2C1->DR = adress + 1;//0xA1
+	while (!(I2C1->SR1 & I2C_SR1_ADDR)){} // ждём
+        
+	(void) I2C1->SR1;
+	(void) I2C1->SR2;
+	while (!(I2C1->SR1 & I2C_SR1_RXNE)){}	// ждём окончания приёма данных
+	eeprom_data = I2C1->DR; // считываем принятое значение
+	I2C1->CR1 |= I2C_CR1_STOP; // формирование сигнала СТОП
+  
+}
+
+void i2c1_rx2 (void){
+        I2C1->CR1 |= I2C_CR1_START;
+	while (!(I2C1->SR1 & I2C_SR1_SB)){}
+	(void) I2C1->SR1;
+
+	// адрес ведомого + запись
+	I2C1->DR = 0xA0;
+	while (!(I2C1->SR1 & I2C_SR1_ADDR)){}
+	(void) I2C1->SR1;
+	(void) I2C1->SR2;
+
+
+	I2C1->DR = 10;
+	while (!(I2C1->SR1 & I2C_SR1_BTF)){}
+
+	// передаём данные
+	I2C1->DR = ++eeprom_data;
+	while (!(I2C1->SR1 & I2C_SR1_BTF)){}
+
+	I2C1->CR1 |= I2C_CR1_STOP;
+}
+
+void Timer2_init_vs_irq(void){
+     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;  // Enable TIM2 Periph clock
+     
+    TIM2->PSC = SystemCoreClock / 1000 - 1; // 1000 tick/sec
+    TIM2->ARR = 1000;  // 1 Interrupt/1 sec
+    TIM2->DIER |= TIM_DIER_UIE; // Enable tim2 interrupt
+    TIM2->CR1 |= TIM_CR1_CEN;   // Start count
+    
+  //  NVIC_SetPriority(TIM2_IRQn, 1);
+    NVIC_EnableIRQ(TIM2_IRQn);  // Enable IRQ 
+}
+
+void Timer3_init_encoder_mode(void){
+     RCC->AHBENR  |= RCC_AHBENR_GPIOBEN; //enable gpioB
+     PIN_CONFIGURATION(ENCODER_CH1);
+     PIN_CONFIGURATION(ENCODER_CH2);
+     
+     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;  // Enable TIM3 Periph clock //?
+     
+    TIM3->PSC = 2; 
+    TIM3->ARR = 255;  //RELOAD AFTER ...
+   // TIM3->SMCR |= TIM_SMCR_TS_2; //?
+    
+    
+      TIM3->SMCR |= TIM_SMCR_SMS_0;// | TIM_SMCR_SMS_1;  /*!<SMS[2:0] bits (Slave mode selection) */
+                                                      //1 КАНАЛ=+2, 2 КАНАЛА=+4;
+      // TIM3->SMCR |= TIM_SMCR_ETF_2; //filter
+       
+   //  TIM3->CCMR1 |= TIM_CCMR1_CC1S_0;
+   //   TIM3->CCMR2 |= TIM_CCMR2_CC3S_0;
+   //    TIM3->CCER |= TIM_CCER_CC1P | TIM_CCER_CC2P;
+       
+    //TIM3->DIER |= TIM_DIER_UIE; // Enable tim3 interrupt
+    TIM3->CR1 |= TIM_CR1_CEN;   // Start count
+    
+    
+   // NVIC_EnableIRQ(TIM3_IRQn);  // Enable IRQ 
+}
+
+
+void Button_init_vs_irq (void){
+   RCC->AHBENR  |= RCC_AHBENR_GPIOAEN; //enable gpioA
+   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;  /*!< System Configuration SYSCFG clock enable */
+  // GPIOA->CRH |=  GPIO_CRH_MODE0_1;
+   GPIOA->PUPDR |=  GPIO_PUPDR_PUPDR0_1; //BUTTON F in - pull down
+   
+  // SYSCFG->EXTICR1 |= SYSCFG_EXTICR1_EXTI1 | SYSCFG_EXTICR1_EXTI1_PA;//?
+   EXTI->EMR |= EXTI_EMR_MR0 ;// PIN 1
+   EXTI->IMR |= EXTI_IMR_MR0; //для выводов 1 
+   EXTI->FTSR|= EXTI_FTSR_TR0 ; //конфигурация - по падающему фронту
+   //SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PA; // Connect EXTI line 0 to PA.0//?
+  // RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+   
+   NVIC_EnableIRQ(EXTI0_IRQn); // Enable IRQn
+}
+
+
+void Matrix_kbd_init (void){
+///////////////////////////////////
+///////Port configuration//////////
+   RCC->AHBENR  |= RCC_AHBENR_GPIOCEN; //enable gpioC
+   /*?*/ RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;  /*!< System Configuration SYSCFG clock enable */
+ PIN_CONFIGURATION(IN_1); 
+ PIN_CONFIGURATION(IN_2);
+ PIN_CONFIGURATION(IN_3);
+ PIN_CONFIGURATION(IN_4);
+ PIN_CONFIGURATION(IN_5);
+ PIN_CONFIGURATION(IN_6);
+
+PIN_CONFIGURATION(OUT_1); 
+PIN_CONFIGURATION(OUT_2);  
+///////Port configuration//////////
+///////////////////////////////////
+}
+
+char Get_key(void){
+  char key = 0;
+while(1){
+GPIOC->BSRRH |= GPIO_BSRR_BS_6;  
+GPIOC->BSRRL |= GPIO_BSRR_BS_6;  
+
+button_port = GPIOC->IDR; 
+//send_to_usart(button_port>>8);
+
+
+GPIOC->BSRRH |= GPIO_BSRR_BS_7;  
+GPIOC->BSRRL |= GPIO_BSRR_BS_7;  
+
+button_port = GPIOC->IDR; 
+//send_to_usart(button_port>>8);
+}
+return key;
+}
+
+
+void Usart_init_vs_irq (void){
+RCC->AHBENR  |= RCC_AHBENR_GPIOAEN; //тактирование порта
+  
+    PIN_CONFIGURATION(USART1_TX);
+    PIN_CONFIGURATION(USART1_RX); 
+    /*   
+   GPIOA->MODER |= GPIO_MODER_MODER9_1; // PA9  AF  
+   GPIOA->OTYPER &= ~ GPIO_OTYPER_OT_9; //out push-pull
+   GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR9;//40 MHZ
+   
+   GPIOA->MODER &=~ GPIO_MODER_MODER10_1; // PA10 IN no pull-up no pull-down
+   GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR10;//40 MHZ
+   */
+    
+  RCC->APB2ENR |= RCC_APB2ENR_USART1EN;// тактирование модуля
+ 
+  USART1->BRR  = (SystemCoreClock + 9600/2)/9600 ; // 0x9c4 ; baud rate 9600 f=24Mhz 
+  USART1->CR1 |=  USART_CR1_RXNEIE; // RX Interrupt Enable 
+ // USART1->CR1 |= USART_CR1_TCIE; // Transmission Complete Interrupt Enable
+  USART1->CR1 |= USART_CR1_UE;//UART ENABLE
+  USART1->CR1 |=USART_CR1_RE | USART_CR1_TE; // rx,tx enable
+  
+  NVIC_EnableIRQ(USART1_IRQn);// Enable IRQ
+}
+
+
+void send_to_usart(uint8_t data) {
+  while(!(USART1->SR & USART_SR_TC)); 
+  USART1->DR=data; 
+}
+
+
+void send_str_u(char * string) { //SEND STRING TO UART
+uint8_t i=0;
+  while(string[i]) {
+  send_to_usart(string[i]);
+  i++;
+ }
+send_to_usart('\r');
+send_to_usart('\n');
+}
+
+
+void Spi2_init_vs_irq(void){
+   RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN; //Тактирование портов A, B
+  //----------------------------------------------------------------------------  
+  // /*
+   //Линини SPI1 (Master)
+  //PA12(MOSI), PA11(MISO), PA5(SCK), PA4(NSS) - AF, Push-Pull, AF5(SPI1)
+  GPIOA->MODER |= GPIO_MODER_MODER12_1 | GPIO_MODER_MODER11_1 | GPIO_MODER_MODER5_1 | GPIO_MODER_MODER4_1; //Alternate function
+  GPIOA->OTYPER &= ~(GPIO_OTYPER_OT_12 | GPIO_OTYPER_OT_11 | GPIO_OTYPER_OT_5 | GPIO_OTYPER_OT_4); //Push-Pull
+  GPIOA->AFR[1] |= (5<<16 | 5<<12); //PA12 = AF5, PA11 = AF5
+  GPIOA->AFR[0] |= (5<<20 | 5<<16); //PA5 = AF5, PA4 = AF5
+  // */
+  
+  //Линии SPI2 (Slave)
+  //PB15(MOSI), PB14(MISO), PB13(SCK), PB12(NSS) - AF, Push-Pull, AF5(SPI1)
+  GPIOB->MODER |= GPIO_MODER_MODER15_1 | GPIO_MODER_MODER14_1 | GPIO_MODER_MODER13_1 | GPIO_MODER_MODER12_1; //Alternate function
+  GPIOB->OTYPER &= ~(GPIO_OTYPER_OT_15 | GPIO_OTYPER_OT_14 | GPIO_OTYPER_OT_13 | GPIO_OTYPER_OT_11); //Push-Pull
+  GPIOB->AFR[1] |= (5<<28 | 5<<24 | 5<<20 | 5<<16); //PB15, PB14, P13, PB12 = AF5 
+  //---------------------------------------------------------------------------- 
+  ///*
+   //Настройка SPI1 (Master)
+ // 8 бит данных, MSB передается первым, программный режим управления NSS, 
+ // вывод NSS (PA4) разрешено использовать в качестве выхода
+  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN; //Тактирование модуля SPI1
+  SPI1->CR1 |= (SPI_CR1_BR_0 | SPI_CR1_BR_1); //Baud rate = Fpclk/16 //if system clk =16MHz -> BR=1MHz
+ // SPI1->CR1 |= SPI_CR1_CPOL; //Полярность тактового сигнала
+ // SPI1->CR1 |= SPI_CR1_CPHA; //Фаза тактового сигнала ///????
+  SPI1->CR1 |= SPI_CR1_DFF; //16 бит данных               ///?
+ // SPI1->CR1 |= SPI_CR1_LSBFIRST; //LSB передается первым
+  SPI1->CR1 |= SPI_CR1_SSM; //Программный режим NSS
+  SPI1->CR1 |= SPI_CR1_SSI; //Аналогично состоянию, когда на входе NSS высокий уровень
+  SPI1->CR2 |= SPI_CR2_SSOE; //Вывод NSS - выход управления slave select
+   //SPI1->CR2 |= SPI_CR2_FRF;
+  SPI1->CR1 |= SPI_CR1_MSTR; //Режим Master
+  
+ //  SPI1->CR2 |= SPI_CR2_TXEIE; /*!< Tx buffer Empty Interrupt Enable */
+   SPI1->CR2 |= SPI_CR2_RXNEIE;  /*!< RX buffer Not Empty Interrupt Enable */
+  
+ // SPI1->CR1 |= SPI_CR1_SPE; //Включаем SPI1
+ // NVIC_EnableIRQ(SPI1_IRQn);
+ // */
+  
+  /*Настройка SPI2 (Slave)
+  8 бит данных, MSB передается первым, аппаратный режим управления NSS, 
+  вывод NSS (PB12) - вход*/
+  RCC->APB1ENR |= RCC_APB1ENR_SPI2EN; //Тактирование модуля SPI2
+  SPI2->CR1 |= SPI_CR1_DFF; //16 бит данных
+ //SPI2->CR1 |= SPI_CR1_CPOL; //Полярность тактового сигнала
+ // SPI2->CR1 |= SPI_CR1_CPHA; //Фаза тактового сигнала
+  //SPI2->CR1 |= SPI_CR1_LSBFIRST; //LSB передается первым
+  SPI2->CR1 |= SPI_CR1_SSM; //Программное управление входом NSS
+  SPI2->CR1 &= ~SPI_CR1_MSTR; //Режим Slave
+  
+ //  SPI2->CR2 |= SPI_CR2_TXEIE; /*!< Tx buffer Empty Interrupt Enable */
+   SPI2->CR2 |= SPI_CR2_RXNEIE;  /*!< RX buffer Not Empty Interrupt Enable */
+  
+  SPI2->CR1 |= SPI_CR1_SPE; //Включаем SPI2  
+  NVIC_EnableIRQ(SPI2_IRQn);
+}
+
+void recieve_from_spi(void) {
+  while(!(SPI1->SR & SPI_SR_RXNE)); //Ожидаем окончания приема данных модулем SPI1 (RXNE =1 - приемный буфер содержит данные)
+  temp = SPI1->DR;//Считываем данные из приемного буфера SPI1. При этой операции происходит очистка буфера и сброс флага RXNE
+}
+
+
+/*Функция обмена данными между модулями SPI1 и SPI2.
+В качестве аргумента при вызове функции передаются числа 0x01 или 0x03, 
+которые затем записываются в буфер передатчика SPI2.
+Значение, записываемое в буфер передатчика SPI1 неважно, в данном случае 0x0F.
+После обмена байтами данных, значение, принятое модулем SPI1 считывается из 
+регистра данных SPI1_DR в переменную temp*/
+void spi_exchange(uint8_t send_data)
+{
+  SPI2->DR = send_data; //Пишем в буфер передатчика SPI2 
+  SPI1->DR = 0x0F; //Пишем в буфер передатчика SPI1. После этого стартует обмен данными
+  recieve_from_spi();
+}
+
+void ADC_init(void){
+     RCC->AHBENR  |= RCC_AHBENR_GPIOAEN; //тактирование порта
+     //Predefined channels
+     //PIN_CONFIGURATION( ADC_CH_10); //C0
+     //PIN_CONFIGURATION( ADC_CH_11); //C1
+     
+     PIN_CONFIGURATION( ADC_CH_3); //A2
+     PIN_CONFIGURATION( ADC_CH_4); //A3
+  
+  RCC->CR |= RCC_CR_HSION; //Включаем внутренний генератор HSI - 16МГц
+  while(!(RCC->CR&RCC_CR_HSIRDY)); //Ждем его стабилизации
+  RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; //Разрешаем тактирование АЦП
+  //----------------------------------------------------------------------------
+ // ADC1->CR2 |=ADC_CR2_DELS_0; //: Until the converted data have been read 
+    ADC1->CR1 |= ADC_CR1_RES_1; //resolution 8 bit
+    
+    /*Последовательность из0мерений (исспользуется только одиночное преобразование)*/
+               /// ADC1->SQR5 |= ADC_SQR1_L_0;
+               // ADC1->SQR5 |= ADC_SQR5_SQ1_1 | ADC_SQR5_SQ1_3; //10 CH
+               // ADC1->SQR5 |= ADC_SQR5_SQ2_0 | ADC_SQR5_SQ2_1 | ADC_SQR5_SQ2_3; //11 CH
+ 
+  ADC1->CR2 &= ~ADC_CR2_ALIGN; //Выравнивание результата вправо 
+  //----------------------------------------------------------------------------
+  ADC1->CR2 |= ADC_CR2_ADON; //Включаем АЦП
+  while(!(ADC1->SR&ADC_SR_ADONS)); //Ждем готовности АЦП
+  //----------------------------------------------------------------------------
+   ADC1->CR1 |= ADC_CR1_EOCIE; /*!< Interrupt enable for EndOfConversion */
+   NVIC_EnableIRQ(ADC1_IRQn);
+       
+   // ADC1->CR2 |= ADC_CR2_SWSTART;  /*!< Start Conversion of regular channels */
+   //ADC1->CR2 |= ADC_CR2_JSWSTART;  /*!< Start Conversion of injected channels */    
+}
+
+void ADC_measure(char ch){
+ ADC1->SQR5 = 0; 
+switch(ch)
+ {
+  case 10:
+      ADC1->SQR5 |= ADC_SQR5_SQ1_1 | ADC_SQR5_SQ1_3; //10 CH
+      break;
+  case 11:
+    ADC1->SQR5 |= ADC_SQR5_SQ1_0 | ADC_SQR5_SQ1_1 | ADC_SQR5_SQ1_3; //11 CH
+      break;
+      
+  case 3:
+    //  ADC1->SQR5 |= ADC_SQR5_SQ1_1 | ADC_SQR5_SQ1_3; //3 CH
+      break;
+  case 4:
+   // ADC1->SQR5 |= ADC_SQR5_SQ1_0 | ADC_SQR5_SQ1_1 | ADC_SQR5_SQ1_3; //4 CH
+      break;
+      
+  default : ADC1->SQR5 |= ADC_SQR5_SQ1_1 | ADC_SQR5_SQ1_3; //10 CH
+ }   
+ADC1->CR2 |= ADC_CR2_SWSTART;  /*!< Start single Conversion of regular channels */
+}
+
+
+
+
+
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//Точная частота камня пока не известна, похоже около 2 Мгц
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+void DM_spi_test(void){
+  
+}
+
+
+
