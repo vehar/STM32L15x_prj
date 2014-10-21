@@ -3,18 +3,13 @@
 
 #include "stdio.h"
 #include "discover_board.h"
-#include "stm32l_discovery_lcd.h"
+//#include "stm32l_discovery_lcd.h"
 //#include "stm32l1xx_i2c.h"
 
 
 #include "gpio_init.h"
 #include "main.h"
 #include "functions.h"
-
-
-
-
-
 
 
 
@@ -129,6 +124,11 @@ void HSI_on_16MHz (void){
   RCC->CR &= ~RCC_CR_MSION; //Отключаем генератор MSI.   
 }
 
+void All_clk_On(void){ //тактирование портов ввода-вывода и периферии
+  RCC->AHBENR  |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
+  RCC->APB1ENR |= RCC_APB1ENR_PWREN | RCC_APB1ENR_I2C1EN | RCC_APB1ENR_I2C2EN | RCC_APB1ENR_USART2EN | RCC_APB1ENR_SPI2EN ;
+  RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_SPI1EN;
+}
 
 void i2c1_init(){
   
@@ -291,22 +291,82 @@ PIN_CONFIGURATION(OUT_2);
 ///////////////////////////////////
 }
 
-char Get_key(void){
+char Get_key(void)
+{
   char key = 0;
-while(1){
-GPIOC->BSRRH |= GPIO_BSRR_BS_6;  
-GPIOC->BSRRL |= GPIO_BSRR_BS_6;  
-
-button_port = GPIOC->IDR; 
-send_to_usart(button_port>>8);
-
-
-GPIOC->BSRRH |= GPIO_BSRR_BS_7;  
-GPIOC->BSRRL |= GPIO_BSRR_BS_7;  
-
-button_port = GPIOC->IDR; 
-send_to_usart(button_port>>8);
-}
+  PIN_ON(OUT_1); //in open-drain mode = Hi-Z !
+  PIN_ON(OUT_2);
+  
+    for(char i=0; i<2; i++)
+    {
+    PIN_ON(OUT_1);  //Hi-Z
+    PIN_OFF(OUT_2); //open-drain
+    button_port = GPIOC->IDR;
+    button_port =~button_port;
+    button_port &= (uint16_t)0x003F; //select key bits
+        switch(button_port)
+        {
+                case 1: 
+            key = 1;
+            break;
+                case 2: 
+            key = 2;
+            break;
+                case 4: 
+            key = 3;
+            break;
+                case 8: 
+            key = 4;
+            break;
+                case 16: 
+            key = 5;
+            break;
+                case 32: 
+            key = 6;
+            break;
+            default : key = button_port;
+     }
+    
+    PIN_ON(OUT_2);
+    PIN_OFF(OUT_1);    
+    button_port = GPIOC->IDR;
+    button_port =~button_port;
+    button_port &= (uint16_t)0x003F; //select key bits
+        switch(button_port)
+        {
+                case 1: 
+            key = 7;
+            break;
+                case 2: 
+            key = 8;
+            break;
+                case 4: 
+            key = 9;
+            break;
+                case 8: 
+            key = 10;
+            break;
+                case 16: 
+            key = 11;
+            break;
+                case 32: 
+            key = 12;
+            break;
+            default : key = button_port;
+     }
+    
+     }    
+        //GPIOC->BSRRH |= GPIO_BSRR_BS_6;  
+        //GPIOC->BSRRL |= GPIO_BSRR_BS_6;  
+        //button_port = GPIOC->IDR; 
+        //send_to_usart(button_port>>8);
+        //GPIOC->BSRRH |= GPIO_BSRR_BS_7;  
+        //GPIOC->BSRRL |= GPIO_BSRR_BS_7;  
+        //button_port = GPIOC->IDR; 
+        //send_to_usart(button_port>>8);
+        
+ PIN_ON(OUT_1); //in open-drain mode = Hi-Z !
+ PIN_ON(OUT_2);       
 return key;
 }
 

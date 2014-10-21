@@ -6,31 +6,31 @@
   <configuration>
     <name>Debug</name>
     <outputs>
-      <file>$TOOLKIT_DIR$\lib\dl7M_tln.a</file>
       <file>$PROJ_DIR$\..\Libraries\STM32L1xx_StdPeriph_Lib_V1.1.0\Libraries\CMSIS\Device\ST\STM32L1xx\Source\Templates\iar\startup_stm32l1xx_md.s</file>
-      <file>$PROJ_DIR$\main.c</file>
       <file>$PROJ_DIR$\..\Libraries\STM32L1xx_StdPeriph_Lib_V1.1.0\Libraries\CMSIS\Device\ST\STM32L1xx\Source\Templates\system_stm32l1xx.c</file>
-      <file>$PROJ_DIR$\..\Libraries\STM32L1xx_StdPeriph_Lib_V1.1.0\Libraries\CMSIS\Device\ST\STM32L1xx\Source\Templates\system_stm32l1xx.h</file>
+      <file>$PROJ_DIR$\main.c</file>
+      <file>$PROJ_DIR$\macros.h</file>
       <file>$PROJ_DIR$\stm32l1xx.h</file>
-      <file>$TOOLKIT_DIR$\inc\c\stdio.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\main.o</file>
       <file>$TOOLKIT_DIR$\inc\c\DLib_Product.h</file>
+      <file>$PROJ_DIR$\..\Libraries\STM32L1xx_StdPeriph_Lib_V1.1.0\Libraries\CMSIS\Device\ST\STM32L1xx\Source\Templates\system_stm32l1xx.h</file>
+      <file>$TOOLKIT_DIR$\lib\dl7M_tln.a</file>
       <file>$TOOLKIT_DIR$\inc\c\ycheck.h</file>
       <file>$TOOLKIT_DIR$\inc\c\xencoding_limits.h</file>
-      <file>$PROJ_DIR$\macros.h</file>
+      <file>$TOOLKIT_DIR$\inc\c\stdio.h</file>
+      <file>$PROJ_DIR$\Debug\Obj\main.o</file>
       <file>$PROJ_DIR$\Debug\Obj\main.pbi</file>
       <file>$TOOLKIT_DIR$\lib\m7M_tl.a</file>
       <file>$TOOLKIT_DIR$\lib\rt7M_tl.a</file>
       <file>$PROJ_DIR$\Debug\Obj\system_stm32l1xx.o</file>
       <file>$PROJ_DIR$\Debug\Obj\i2c.pbd</file>
       <file>$PROJ_DIR$\system_stm32l1xx.h</file>
-      <file>$PROJ_DIR$\main.h</file>
-      <file>$PROJ_DIR$\Debug\Obj\system_stm32l1xx.pbi</file>
       <file>$PROJ_DIR$\generic_cortex.icf</file>
-      <file>$TOOLKIT_DIR$\CMSIS\Include\core_cm3.h</file>
+      <file>$PROJ_DIR$\Debug\Obj\system_stm32l1xx.pbi</file>
       <file>$TOOLKIT_DIR$\inc\c\DLib_Defaults.h</file>
-      <file>$TOOLKIT_DIR$\inc\c\ystdio.h</file>
+      <file>$TOOLKIT_DIR$\CMSIS\Include\core_cm3.h</file>
       <file>$TOOLKIT_DIR$\inc\c\DLib_Config_Normal.h</file>
+      <file>$TOOLKIT_DIR$\inc\c\ystdio.h</file>
+      <file>$PROJ_DIR$\main.h</file>
       <file>$PROJ_DIR$\..\Libraries\STM32L1xx_StdPeriph_Lib_V1.1.0\Libraries\CMSIS\Device\ST\STM32L1xx\Source\Templates\stm32l1xx.h</file>
       <file>$TOOLKIT_DIR$\lib\shb_l.a</file>
       <file>$PROJ_DIR$\mcu_gpio.h</file>
@@ -51,7 +51,17 @@
       <file>$PROJ_DIR$\gpio_init.h</file>
       <file>$PROJ_DIR$\functions.h</file>
       <file>$PROJ_DIR$\functions.c</file>
+      <file>$PROJ_DIR$\system_stm32l1xx.c</file>
     </outputs>
+    <file>
+      <name>[ROOT_NODE]</name>
+      <outputs>
+        <tool>
+          <name>ILINK</name>
+          <file> 37</file>
+        </tool>
+      </outputs>
+    </file>
     <file>
       <name>$PROJ_DIR$\..\Libraries\STM32L1xx_StdPeriph_Lib_V1.1.0\Libraries\CMSIS\Device\ST\STM32L1xx\Source\Templates\iar\startup_stm32l1xx_md.s</name>
       <outputs>
@@ -60,29 +70,6 @@
           <file> 35</file>
         </tool>
       </outputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\main.c</name>
-      <outputs>
-        <tool>
-          <name>ICCARM</name>
-          <file> 7</file>
-        </tool>
-        <tool>
-          <name>BICOMP</name>
-          <file> 12</file>
-        </tool>
-      </outputs>
-      <inputs>
-        <tool>
-          <name>ICCARM</name>
-          <file> 5 21 39 9 36 22 24 8 10 38 33 30 31 32 17 28 6 29 23 40 34 18 11 41 27 42 43 44</file>
-        </tool>
-        <tool>
-          <name>BICOMP</name>
-          <file> 5 21 39 9 36 22 24 8 10 38 33 30 31 32 17 28 6 29 23 40 34 18 11 41 27 42 43 44</file>
-        </tool>
-      </inputs>
     </file>
     <file>
       <name>$PROJ_DIR$\..\Libraries\STM32L1xx_StdPeriph_Lib_V1.1.0\Libraries\CMSIS\Device\ST\STM32L1xx\Source\Templates\system_stm32l1xx.c</name>
@@ -99,29 +86,43 @@
       <inputs>
         <tool>
           <name>ICCARM</name>
-          <file> 25 21 39 9 36 22 24 8 10 38 33 30 31 32 4</file>
+          <file> 25 21 39 8 36 20 22 5 9 38 33 30 31 32 6</file>
         </tool>
         <tool>
           <name>BICOMP</name>
-          <file> 25 21 39 9 36 22 24 8 10 38 33 30 31 32 4</file>
+          <file> 25 21 39 8 36 20 22 5 9 38 33 30 31 32 6</file>
         </tool>
       </inputs>
     </file>
     <file>
-      <name>[ROOT_NODE]</name>
+      <name>$PROJ_DIR$\main.c</name>
       <outputs>
         <tool>
-          <name>ILINK</name>
-          <file> 37</file>
+          <name>ICCARM</name>
+          <file> 11</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 12</file>
         </tool>
       </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 4 21 39 8 36 20 22 5 9 38 33 30 31 32 17 28 10 29 23 24 3 41 34 27 42 43 44</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 4 21 39 8 36 20 22 5 9 38 33 30 31 32 17 28 10 29 23 24 3 41 34 27 42 43 44</file>
+        </tool>
+      </inputs>
     </file>
     <file>
       <name>$PROJ_DIR$\Debug\Exe\c.out</name>
       <inputs>
         <tool>
           <name>ILINK</name>
-          <file> 20 7 35 15 26 14 13 0</file>
+          <file> 18 11 35 15 26 14 13 7</file>
         </tool>
       </inputs>
     </file>

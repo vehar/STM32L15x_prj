@@ -13,6 +13,8 @@
 
 #include "stm32l1xx.h"
 #include "stm32l1xx_it.h"
+
+#include "discover_board.h"
 #include "core_cm3.h"
 
 #include "mcu_gpio.h"
@@ -36,8 +38,8 @@
 
 /****BUTTON SECTION_END*****************/
 
-#define USART1_RX	A, 10,HIGH, MODE_AF_PUSH_PULL, SPEED_40MHZ, AF7
-#define USART1_TX	A, 9, HIGH, MODE_AF_PUSH_PULL, SPEED_40MHZ, AF7
+#define USART1_RX	A, 10,HIGH, MODE_AF_PUSH_PULL, SPEED_2MHZ, AF7
+#define USART1_TX	A, 9, HIGH, MODE_AF_PUSH_PULL, SPEED_2MHZ, AF7
 
 #define PIN_I2C1_SCL		B, 6, HIGH, MODE_AF_OPEN_DRAIN_PULL_UP, SPEED_40MHZ, AF4
 #define PIN_I2C1_SDA		B, 7, HIGH, MODE_AF_OPEN_DRAIN_PULL_UP, SPEED_40MHZ, AF4

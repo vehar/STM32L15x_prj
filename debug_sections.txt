@@ -18,3 +18,10 @@
 
    
   //**********Debug section***************/  
+  
+  
+           /* Calculate RV3 voltage value*/
+ /// rv3voltage = (uint16_t)((uint32_t)((uint32_t)ADC1->DR * (uint32_t)ADC_RATIO) / (uint32_t)1000);
+ /// send_to_usart(rv3voltage); 
+ 
+ 

@@ -21,14 +21,14 @@ ActionState=1
 Enabled=0
 ShowSource=1
 [DebugChecksum]
-Checksum=262373206
+Checksum=-745770335
 [Exceptions]
 StopOnUncaught=_ 0
 StopOnThrow=_ 0
 [CallStack]
 ShowArgs=0
 [Disassembly]
-MixedMode=1
+MixedMode=0
 [SWOTraceHWSettings]
 OverrideDefaultClocks=0
 CpuClock=72000000
@@ -71,7 +71,9 @@ Category=_ 0
 LoggingEnabled=_ 0
 LogFile=_ ""
 [Aliases]
-Count=0
+A0=_ "D:\Work\RDM_backup_29_10_13\STM32_proj\RDM-2m11_STM23_prj\functions.c" ""
+A1=_ "D:\Work\RDM_backup_29_10_13\STM32_proj\RDM-2m11_STM23_prj\main.c" ""
+Count=2
 SuppressDialog=0
 [Trace2]
 Enabled=0

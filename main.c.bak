@@ -1,53 +1,37 @@
-#include "stm32l1xx.h"
-#include "stm32l1xx_gpio.h"
-
-#include "stdio.h"
 //#include "discover_board.h"
-#include "stm32l_discovery_lcd.h"
+//#include "stm32l_discovery_lcd.h"
 //#include "stm32l1xx_i2c.h"
 
-
-
+#include "stm32l1xx.h"
+#include "stm32l1xx_gpio.h"
+#include "stdio.h"
 #include "main.h"
 #include "gpio_init.h"
 #include "functions.h"
 #include "functions.c"
 
-
-int main(void)
-{
+void All_init(void){
     SystemInit();
-    
  // HSI_on_16MHz();
-    //тактирование портов ввода-вывода и периферии
-  RCC->AHBENR  |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
-  RCC->APB1ENR |= RCC_APB1ENR_PWREN | RCC_APB1ENR_I2C1EN | RCC_APB1ENR_I2C2EN | RCC_APB1ENR_USART2EN | RCC_APB1ENR_SPI2EN ;
-  RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_SPI1EN;
- 
-	// светодиоды
-	//PIN_CONFIGURATION(LED_GREEN);
-	//PIN_CONFIGURATION(LED_BLUE);
+    All_clk_On(); 
+
+	//PIN_CONFIGURATION(LED_GREEN);	//PIN_CONFIGURATION(LED_BLUE); 	// светодиоды
   //OR
  GPIOB->MODER |= GPIO_MODER_MODER6_0 | GPIO_MODER_MODER7_0 ;//B6 B7 - out       
-	// кнопка
-PIN_CONFIGURATION(USER_BUTTON);        
-//OR
-        // GPIOA->MODER &=~ GPIO_MODER_MODER1_0;//A1 IN   
+PIN_CONFIGURATION(USER_BUTTON);        	// кнопка
+//OR      // GPIOA->MODER &=~ GPIO_MODER_MODER1_0;//A1 IN   
 
-///i2c1_init();
-///i2c1_rx(0xA0);
-
+/******Key`s init_section******/  
   //    Timer2_init_vs_irq(); //ovr_irq
  Timer3_init_encoder_mode(); // encoder
-      Button_init_vs_irq();
-      
-      Matrix_kbd_init();
-      
-      Usart_init_vs_irq ();
-      Spi2_init_vs_irq  ();
-      ADC_init();
-
-
+ Button_init_vs_irq();   
+ Matrix_kbd_init();
+  
+/****Interface init_section****/  
+ Usart_init_vs_irq ();
+ Spi2_init_vs_irq  ();
+ ///i2c1_init();///i2c1_rx(0xA0);
+ ADC_init();
 
  //----------------------------------------------------------------
         //ENEBLE INTERRUPTS
@@ -60,21 +44,19 @@ PIN_CONFIGURATION(USER_BUTTON);
  //EXTI->IMR |=(EXTI_IMR_MR1 | EXTI_IMR_MR2); //для выводов 1 и 2
 // EXTI->RTSR |= EXTI_RTSR_TR1 | EXTI_FTSR_TR2 ; //конфигурация - по растущему и падающему фронтам
  //-------------------------------------------------------------------
- 
- send_str_u("===STM_GO!===\n");
- 
-  //  ADC_measure(10);  /*!< Start Conversion of regular channels */
+}
+
+void Debug_section(void){
+ //**********Debug section***************//
+ //*************************************//
+   //  ADC_measure(10);  /*!< Start Conversion of regular channels */
    //   ADC_measure(11);
     //   ADC_measure(16);
-
- 
 // send_str_u(  (char*)NVIC_GetPriority (EXTI0_IRQn));
-
-   
- // spi_exchange(send_data); 
+ //spi_exchange(send_data); 
  //send_data = 0x05;
  
- //**********Debug section***************/
+  send_str_u("===STM_GO!===\n");
  button_port = GPIOC->IDR;  
 send_to_usart(button_port>>8);
  
@@ -94,14 +76,15 @@ button_port = GPIOC->IDR; send_to_usart(button_port>>8);
 
  PIN_ON(LED_GREEN); 
  PIN_OFF(LED_GREEN) ;
- PIN_SIGNAL(LED_GREEN) ;
+ //PIN_SIGNAL(LED_GREEN) ;
  
 Get_key();
 
-  //**********Debug section***************/  
-  
- while (1)
- {
+//*************************************//
+//**********Debug section***************/  
+}
+
+void Encoder_proc (void){
     Encoder_curr_pos = (TIM3->CNT & 254)>>1; //get encoder data (1 byte, div 2)
    if(Encoder_curr_pos != Encoder_prev_pos)
    {
@@ -109,24 +92,32 @@ Get_key();
      send_to_usart(Encoder_curr_pos);
      Encoder_prev_pos = Encoder_curr_pos;     
    }
+}
+
+
+
+int main(void)
+{
+All_init();
+
+Debug_section();
+  
+ while (1)
+ {
+
+ Encoder_proc();
    
        
 
-button_port = GPIOC->IDR;  
-send_to_usart(button_port>>8);
-
-
-         /* Calculate RV3 voltage value*/
- /// rv3voltage = (uint16_t)((uint32_t)((uint32_t)ADC1->DR * (uint32_t)ADC_RATIO) / (uint32_t)1000);
- /// send_to_usart(rv3voltage); 
-  
+//button_port = GPIOC->IDR;  
+//send_to_usart(button_port>>8);
+ 
   
     ///////////////////////////////////////////////////////--------------------
           /*Вызов функции обмена данными.
     В качестве аргумента поочередно передаются значения 0x01 или 0x03*/
  
-   
-    //spi_exchange(send_data); 
+       //spi_exchange(send_data); 
     //SPI2->DR = Encoder_curr_pos; //Пишем в буфер передатчика SPI2 
    // send_to_usart(Encoder_curr_pos);
  //   SPI1->DR = 0x05+512; //Пишем в буфер передатчика SPI1. После этого стартует обмен данными
@@ -155,6 +146,7 @@ send_to_usart(button_port>>8);
     }
     //////////////////////////////////////////////////////////////-------------------
 //delay(1000);
+
   delay(100000);  
   
   //send_to_usart(temp);
@@ -183,8 +175,8 @@ send_to_usart(button_port>>8);
         SPI2->DR=0xABCD;
       break;
        case '8':  //Keybord_debug
-  pressed_key = Get_key();    
-  send_to_usart(pressed_key);
+  //pressed_key = Get_key();    
+  //send_to_usart(pressed_key);
  
       break;
      //default :    send_str_u("Invalid_comand!");
@@ -228,10 +220,10 @@ send_to_usart(button_port>>8);
         GPIOB->ODR &= ~GPIO_ODR_ODR_6  ;
         delay(100000);
          */ 
+         
+         
 //flag state machine
  if(ADC_start_flag)    { ADC_measure(10); ADC_measure(11); RESET(ADC_start_flag);} 
-
- 
  
  
  //End of main cycle
@@ -358,6 +350,7 @@ EXTI->PR |= EXTI_PR_PR10;  // сброс флага прерывания
 
 
 void USART1_IRQHandler (void){
+
   if (USART1->SR & USART_SR_RXNE) {
     usart_data=USART1->DR;   
 //USART1->DR = USART1->DR; //ECHO MODE
